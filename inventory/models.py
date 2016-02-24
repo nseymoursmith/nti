@@ -103,6 +103,7 @@ class StockCorrection(models.Model):
         if not self.pk:
             super(StockCorrection, self).save(*args, **kwargs)
             for entry in self.items_changed.all():
+                #BUG: Does not get any entries
                 print "HERE"
                 print entry.supply
                 entry.supply += StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason).filter(item__name=entry.name)[0].number_changed

@@ -86,9 +86,11 @@ class ProductAdmin(admin.ModelAdmin):
 class StockOrderAdmin(admin.ModelAdmin):
     inlines = [ItemOrderInline]
     list_display = ('supplier', 'date', 'delivery_date', 'delivered')
+    save_as = True
 
 class ProductOrderAdmin(admin.ModelAdmin):
     list_display = ('product', 'customer', 'date', 'completion_date', 'completed')
+    save_as = True
 
 class StockCorrectionAdmin(admin.ModelAdmin):
     inlines = [StockChangeInline]
