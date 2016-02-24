@@ -72,11 +72,6 @@ class StockOrder(models.Model):
     items_ordered = models.ManyToManyField(Item, through='ItemOrder')
     delivered = models.BooleanField('Delivered?', default = False)
     def save(self, *args, **kwargs):
-        if not self.pk and self.delivered:
-#            super(StockOrder, self).save(*args, **kwargs)
-            for entry in self.items_ordered.all():
-                entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
-                entry.save() #TODO: for some reason this does not update properly
         if self.pk:
             orig = StockOrder.objects.get(pk = self.pk)
             if orig.delivered != self.delivered:
@@ -88,6 +83,11 @@ class StockOrder(models.Model):
                     for entry in self.items_ordered.all():
                         entry.supply -= ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
                         entry.save()
+        if not self.pk and self.delivered:
+            super(StockOrder, self).save(*args, **kwargs)
+            for entry in self.items_ordered.all():
+                entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
+                entry.save() #TODO: for some reason this does not update properly
         super(StockOrder, self).save(*args, **kwargs)
         checkStock()
 
