@@ -81,6 +81,7 @@ class SupplierAdmin(admin.ModelAdmin):
 
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ItemRequirementInline]
+    save_as = True
 #    list_display = ('name', 'supply', 'to_make')
 
 class StockOrderAdmin(admin.ModelAdmin):
