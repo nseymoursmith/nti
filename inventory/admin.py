@@ -64,6 +64,9 @@ class ItemAdmin(admin.ModelAdmin):
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ('name','email', 'phone')
 
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ('name','website', 'email', 'phone')
+
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ItemRequirementInline]
 #    list_display = ('name', 'supply', 'to_make')
@@ -85,6 +88,8 @@ admin.site.register(Product, ProductAdmin)
 admin.site.register(Item, ItemAdmin)
 
 admin.site.register(Customer, CustomerAdmin)
+
+admin.site.register(Supplier, SupplierAdmin)
 
 admin.site.register(StockOrder, StockOrderAdmin)
 
