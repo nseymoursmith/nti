@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from django import forms
+
 from .models import Location
 
 from .models import Item
@@ -27,11 +29,17 @@ class ItemSupplierInline(admin.TabularInline):
 
 class ItemRequirementInline(admin.TabularInline):
     model = ItemRequirement
+    readonly_fields = ('stock_report',)
+    def stock_report(self, instance):
+        return instance.number_stocked()
+    stock_report.short_description = "In Stock: "
     extra = 0
 
-# class EventStockInline(admin.TabularInline):
-#     model = EventStock
-#     extra = 0
+# class ItemRequirementAdmin(admin.ModelAdmin):
+#     readonly_fields = ('stock_report',)
+#     def stock_report(self, instance):
+#         return instance.number_stocked()
+#     stock_report.short_description = "In Stock: "
 
 class ItemAdmin(admin.ModelAdmin):
     inlines = [ItemLocationInline, ItemSupplierInline]
@@ -42,11 +50,6 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'supply', 'to_make')
 
 
-#    list_display = ('name', 'ours', 'can_borrow')
-
-# class EventAdmin(admin.ModelAdmin):
-#     inlines = [EventStockInline]
-#     list_display = ('name', 'place', 'start_date', 'end_date')
 
 admin.site.register(Product, ProductAdmin)
 
@@ -55,6 +58,8 @@ admin.site.register(Location)
 admin.site.register(Supplier)
 
 admin.site.register(Item, ItemAdmin)
+
+#admin.site.register(ItemRequirement, ItemRequirementAdmin)
 
 #admin.site.register(Event, EventAdmin)
 

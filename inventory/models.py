@@ -48,7 +48,8 @@ class ItemRequirement(models.Model):
     item = models.ForeignKey(Item)
     number_required = models.IntegerField(default = 0)
    
-    def get_supply(self):
+    def number_stocked(self):
+        if self.item == None: return "undefined"
         return self.item.supply
 
     def __unicode__(self):
