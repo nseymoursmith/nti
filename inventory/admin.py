@@ -24,6 +24,10 @@ from .models import ProductOrder
 
 from .models import Customer
 
+from .models import StockCorrection
+
+from .models import StockChange
+
 #from .models import Event
 #from .models import EventStock
 
@@ -37,6 +41,14 @@ class ItemSupplierInline(admin.TabularInline):
 
 class ItemOrderInline(admin.TabularInline):
     model = ItemOrder
+    readonly_fields = ('stock_report',)
+    def stock_report(self, instance):
+        return instance.number_stocked()
+    stock_report.short_description = "In Stock: "
+    extra = 0
+
+class StockChangeInline(admin.TabularInline):
+    model = StockChange
     readonly_fields = ('stock_report',)
     def stock_report(self, instance):
         return instance.number_stocked()
@@ -78,6 +90,10 @@ class StockOrderAdmin(admin.ModelAdmin):
 class ProductOrderAdmin(admin.ModelAdmin):
     list_display = ('product', 'customer', 'date', 'completion_date', 'completed')
 
+class StockCorrectionAdmin(admin.ModelAdmin):
+    inlines = [StockChangeInline]
+    list_display = ('date', 'reason')
+
 
 admin.site.register(Product, ProductAdmin)
 
@@ -92,6 +108,8 @@ admin.site.register(Customer, CustomerAdmin)
 admin.site.register(Supplier, SupplierAdmin)
 
 admin.site.register(StockOrder, StockOrderAdmin)
+
+admin.site.register(StockCorrection, StockCorrectionAdmin)
 
 admin.site.register(ProductOrder, ProductOrderAdmin)
 #admin.site.register(ItemRequirement, ItemRequirementAdmin)

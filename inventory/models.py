@@ -62,8 +62,8 @@ class Product(models.Model):
     def __unicode__(self):
         return self.name
 
-#TODO: Make sure that if 'delivered' is check on first creation, that the item stock is appropriately
-#      updated! Likewise for ProductOrder
+#TODO: Can we make it so that if a Stock order is deleted, we can also reduce associated stock?
+#      Maybe more complicated than it needs to be, we could just use breakage
 class StockOrder(models.Model):
     supplier = models.ForeignKey(Supplier)
     date = models.DateTimeField('Date Ordered')
@@ -87,12 +87,34 @@ class StockOrder(models.Model):
             super(StockOrder, self).save(*args, **kwargs)
             for entry in self.items_ordered.all():
                 entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
-                entry.save() #TODO: for some reason this does not update properly
+                entry.save() 
         super(StockOrder, self).save(*args, **kwargs)
         checkStock()
 
     def __unicode__(self):
         return self.supplier.name
+
+class StockCorrection(models.Model):
+    date = models.DateTimeField('Date Ordered')
+    items_changed = models.ManyToManyField(Item, through='StockChange')
+    reason = models.CharField(max_length = 256)
+    def save(self, *args, **kwargs):
+        # if self.pk:
+        #     orig = StockCorrection.objects.get(pk = self.pk)
+        #     if orig.items_changed != self.items_changed:
+        #         for entry in self.items_changed.all():
+        #             entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
+        #             entry.save()
+        if not self.pk:
+            super(StockCorrection, self).save(*args, **kwargs)
+        for entry in self.items_changed.all():
+            entry.supply += StockChange.objects.filter(correction__date=self.date).filter(item__name=entry.name)[0].number_changed
+            entry.save() 
+        super(StockCorrection, self).save(*args, **kwargs)
+        checkStock()
+
+    def __unicode__(self):
+        return str(self.date)
 
 class ProductOrder(models.Model):
     customer = models.ForeignKey(Customer)
@@ -161,6 +183,18 @@ class ItemOrder(models.Model):
 
     def __unicode__(self):
         return self.stock_order.supplier.name
+
+class StockChange(models.Model):
+    correction = models.ForeignKey(StockCorrection)
+    item = models.ForeignKey(Item)
+    number_changed = models.IntegerField(default = 0)
+
+    def number_stocked(self):
+        if self.item == None: return "undefined"
+        return self.item.supply
+
+    def __unicode__(self):
+        return self.correction.reason
 
 class ItemRequirement(models.Model):
     product = models.ForeignKey(Product)
