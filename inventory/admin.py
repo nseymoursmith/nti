@@ -20,6 +20,8 @@ from .models import StockOrder
 
 from .models import ItemOrder
 
+from .models import ProductOrder
+
 #from .models import Event
 #from .models import EventStock
 
@@ -65,15 +67,21 @@ class StockOrderAdmin(admin.ModelAdmin):
     inlines = [ItemOrderInline]
     list_display = ('supplier', 'date', 'delivery_date', 'delivered')
 
+class ProductOrderAdmin(admin.ModelAdmin):
+    list_display = ('product', 'date', 'completion_date', 'completed')
+
+
 admin.site.register(Product, ProductAdmin)
 
-admin.site.register(Location)
+#admin.site.register(Location)
 
-admin.site.register(Supplier)
+#admin.site.register(Supplier)
 
 admin.site.register(Item, ItemAdmin)
 
 admin.site.register(StockOrder, StockOrderAdmin)
+
+admin.site.register(ProductOrder, ProductOrderAdmin)
 #admin.site.register(ItemRequirement, ItemRequirementAdmin)
 
 #admin.site.register(Event, EventAdmin)

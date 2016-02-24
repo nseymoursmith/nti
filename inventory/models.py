@@ -51,13 +51,33 @@ class StockOrder(models.Model):
     items_ordered = models.ManyToManyField(Item, through='ItemOrder')
     delivered = models.BooleanField('Delivered?', default = False)
     def save(self):
-        if self.delivered:
-            for entry in self.items_ordered.all():
-                entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
-                entry.save()
+        if self.pk:
+            if self.delivered:
+                for entry in self.items_ordered.all():
+                    entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
+                    entry.save()
+        super(StockOrder, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return self.supplier.name
+
+class ProductOrder(models.Model):
+    product = models.ForeignKey(Product)
+    date = models.DateTimeField('Date Ordered')
+    completion_date = models.DateField('Completion Date')
+#    items_used = models.ManyToManyField(Item, through='ItemOrder')
+    completed = models.BooleanField('Completed?', default = False)
+    def save(self, *args, **kwargs):
+        #todo add update of completed etc.
+        if self.pk:
+            if self.completed:
+                for entry in self.product.req_item.all():
+                    entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
+                    entry.save()
+        super(ProductOrder, self).save(*args, **kwargs)
+
+    def __unicode__(self):
+        return self.product.name
 
 #todo: product order
 #todo: breakage
