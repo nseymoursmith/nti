@@ -95,21 +95,19 @@ class StockOrder(models.Model):
         return self.supplier.name
 
 class StockCorrection(models.Model):
+    warning = models.CharField(max_length = 256, default = "Warning: this can only be applied once. Changing values after creation will have no effect - don't do it!")
     date = models.DateTimeField('Date Ordered')
     items_changed = models.ManyToManyField(Item, through='StockChange')
     reason = models.CharField(max_length = 256)
     def save(self, *args, **kwargs):
-        # if self.pk:
-        #     orig = StockCorrection.objects.get(pk = self.pk)
-        #     if orig.items_changed != self.items_changed:
-        #         for entry in self.items_changed.all():
-        #             entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
-        #             entry.save()
         if not self.pk:
             super(StockCorrection, self).save(*args, **kwargs)
-        for entry in self.items_changed.all():
-            entry.supply += StockChange.objects.filter(correction__date=self.date).filter(item__name=entry.name)[0].number_changed
-            entry.save() 
+            for entry in self.items_changed.all():
+                print "HERE"
+                print entry.supply
+                entry.supply += StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason).filter(item__name=entry.name)[0].number_changed
+                print entry.supply
+                entry.save() 
         super(StockCorrection, self).save(*args, **kwargs)
         checkStock()
 

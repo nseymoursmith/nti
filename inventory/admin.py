@@ -93,6 +93,11 @@ class ProductOrderAdmin(admin.ModelAdmin):
 class StockCorrectionAdmin(admin.ModelAdmin):
     inlines = [StockChangeInline]
     list_display = ('date', 'reason')
+    readonly_fields = ("warning",)
+    # def get_readonly_fields(self, request, obj=None):
+    #     if obj: # editing an existing object
+    #         return self.readonly_fields + ('items_changed__number_changed',)
+    #     return self.readonly_fields
 
 
 admin.site.register(Product, ProductAdmin)
@@ -109,7 +114,7 @@ admin.site.register(Supplier, SupplierAdmin)
 
 admin.site.register(StockOrder, StockOrderAdmin)
 
-admin.site.register(StockCorrection, StockCorrectionAdmin)
+#admin.site.register(StockCorrection, StockCorrectionAdmin)
 
 admin.site.register(ProductOrder, ProductOrderAdmin)
 #admin.site.register(ItemRequirement, ItemRequirementAdmin)
