@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import date as dm
 #Extended from Letsmake inventory app
 
 # Basic objects, without relationships
@@ -42,7 +43,38 @@ class Product(models.Model):
     def __unicode__(self):
         return self.name
 
+class StockOrder(models.Model):
+    supplier = models.ForeignKey(Supplier)
+    date = models.DateTimeField('Date Ordered', default = dm.today)
+    delivery_date = models.DateField('Delivery Date', default = dm.today)
+#    date.auto_now_add
+    items_ordered = models.ManyToManyField(Item, through='ItemOrder')
+    delivered = models.BooleanField('Delivered?', default = False)
+    def save(self):
+        if self.delivered:
+            for entry in self.items_ordered.all():
+                entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
+                entry.save()
+
+    def __unicode__(self):
+        return self.supplier.name
+
+#todo: product order
+#todo: breakage
+
 # Relationship objects
+class ItemOrder(models.Model):
+    stock_order = models.ForeignKey(StockOrder)
+    item = models.ForeignKey(Item)
+    number_ordered = models.IntegerField(default = 0)
+
+    def number_stocked(self):
+        if self.item == None: return "undefined"
+        return self.item.supply
+
+    def __unicode__(self):
+        return self.stock_order.supplier.name
+
 class ItemRequirement(models.Model):
     product = models.ForeignKey(Product)
     item = models.ForeignKey(Item)
@@ -74,4 +106,3 @@ class ItemSupplier(models.Model):
 
     def __unicode__(self):
         return self.supplier.name
-
