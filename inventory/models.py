@@ -1,6 +1,10 @@
 from django.db import models
 from datetime import date as dm
-#Extended from Letsmake inventory app
+
+def checkStock(minimum = 10):
+    for item in Item.objects.all():
+        if item.supply < minimum:
+            print "Warning: %s stock at %d, buy summore!" % (item.name, item.supply)
 
 # Basic objects, without relationships
 class Location(models.Model):
@@ -53,6 +57,8 @@ class Product(models.Model):
     def __unicode__(self):
         return self.name
 
+#TODO: Make sure that if 'delivered' is check on first creation, that the item stock is appropriately
+#      updated! Likewise for ProductOrder
 class StockOrder(models.Model):
     supplier = models.ForeignKey(Supplier)
     date = models.DateTimeField('Date Ordered', default = dm.today)
@@ -73,6 +79,7 @@ class StockOrder(models.Model):
                         entry.supply -= ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
                         entry.save()
         super(StockOrder, self).save(*args, **kwargs)
+        checkStock()
 
     def __unicode__(self):
         return self.supplier.name
@@ -98,12 +105,35 @@ class ProductOrder(models.Model):
                         entry.save()
            
         super(ProductOrder, self).save(*args, **kwargs)
+        checkStock()
 
     def __unicode__(self):
         return self.product.name
 
-#todo: product order
-#todo: breakage
+# class CustomerOrder(models.Model):
+#     customer = models.ForeignKey(Customer)
+#     product = models.ManyToManyField(Product, through='ProductRequirement')
+#     date = models.DateTimeField('Date Ordered')
+#     completion_date = models.DateField('Completion Date')
+# #    items_used = models.ManyToManyField(Item, through='ItemOrder')
+#     completed = models.BooleanField('Completed?', default = False)
+#     def save(self, *args, **kwargs):
+#         if self.pk:
+#             orig = ProductOrder.objects.get(pk = self.pk)
+#             if orig.completed != self.completed:
+#                 if self.completed:
+#                     for entry in self.product.req_item.all():
+#                         entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
+#                         entry.save()
+#                 else:
+#                     for entry in self.product.req_item.all():
+#                         entry.supply += ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
+#                         entry.save()
+           
+#         super(ProductOrder, self).save(*args, **kwargs)
+
+#     def __unicode__(self):
+#         return self.product.name
 
 # Relationship objects
 class ItemOrder(models.Model):
