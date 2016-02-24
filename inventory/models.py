@@ -19,6 +19,16 @@ class Owner(models.Model):
 class Supplier(models.Model):
     name = models.CharField(max_length = 50)
     website = models.URLField(max_length = 100)
+    email = models.EmailField(blank = True)
+    phone = models.CharField(max_length = 20, blank = True)
+
+    def __unicode__(self):
+        return self.name
+
+class Customer(models.Model):
+    name = models.CharField(max_length = 50)
+    email = models.EmailField(blank = True)
+    phone = models.CharField(max_length = 20, blank = True)
 
     def __unicode__(self):
         return self.name
@@ -50,12 +60,18 @@ class StockOrder(models.Model):
 #    date.auto_now_add
     items_ordered = models.ManyToManyField(Item, through='ItemOrder')
     delivered = models.BooleanField('Delivered?', default = False)
-    def save(self):
+    def save(self, *args, **kwargs):
         if self.pk:
-            if self.delivered:
-                for entry in self.items_ordered.all():
-                    entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
-                    entry.save()
+            orig = StockOrder.objects.get(pk = self.pk)
+            if orig.delivered != self.delivered:
+                if self.delivered:
+                    for entry in self.items_ordered.all():
+                        entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
+                        entry.save()
+                else:
+                    for entry in self.items_ordered.all():
+                        entry.supply -= ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
+                        entry.save()
         super(StockOrder, self).save(*args, **kwargs)
 
     def __unicode__(self):
@@ -68,12 +84,18 @@ class ProductOrder(models.Model):
 #    items_used = models.ManyToManyField(Item, through='ItemOrder')
     completed = models.BooleanField('Completed?', default = False)
     def save(self, *args, **kwargs):
-        #todo add update of completed etc.
         if self.pk:
-            if self.completed:
-                for entry in self.product.req_item.all():
-                    entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
-                    entry.save()
+            orig = ProductOrder.objects.get(pk = self.pk)
+            if orig.completed != self.completed:
+                if self.completed:
+                    for entry in self.product.req_item.all():
+                        entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
+                        entry.save()
+                else:
+                    for entry in self.product.req_item.all():
+                        entry.supply += ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
+                        entry.save()
+           
         super(ProductOrder, self).save(*args, **kwargs)
 
     def __unicode__(self):
