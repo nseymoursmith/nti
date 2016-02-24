@@ -22,6 +22,8 @@ from .models import ItemOrder
 
 from .models import ProductOrder
 
+from .models import Customer
+
 #from .models import Event
 #from .models import EventStock
 
@@ -59,16 +61,19 @@ class ItemAdmin(admin.ModelAdmin):
     inlines = [ItemLocationInline, ItemSupplierInline]
     list_display = ('name','supply')
 
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ('name','email', 'phone')
+
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ItemRequirementInline]
-    list_display = ('name', 'supply', 'to_make')
+#    list_display = ('name', 'supply', 'to_make')
 
 class StockOrderAdmin(admin.ModelAdmin):
     inlines = [ItemOrderInline]
     list_display = ('supplier', 'date', 'delivery_date', 'delivered')
 
 class ProductOrderAdmin(admin.ModelAdmin):
-    list_display = ('product', 'date', 'completion_date', 'completed')
+    list_display = ('product', 'customer', 'date', 'completion_date', 'completed')
 
 
 admin.site.register(Product, ProductAdmin)
@@ -78,6 +83,8 @@ admin.site.register(Product, ProductAdmin)
 #admin.site.register(Supplier)
 
 admin.site.register(Item, ItemAdmin)
+
+admin.site.register(Customer, CustomerAdmin)
 
 admin.site.register(StockOrder, StockOrderAdmin)
 
@@ -90,9 +97,4 @@ admin.site.register(ProductOrder, ProductOrderAdmin)
 
 #admin.site.register(ItemLocation)
 
-
 #admin.site.register(ItemSupplier)
-
-#BUG when adding a new supplier from stock order admin:
-#AFter saving you don't go back to stock order admin,
-#but rather get stuck in a window saying 'popup closing'

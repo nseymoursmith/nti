@@ -46,8 +46,8 @@ class Item(models.Model):
 class Product(models.Model):
     name = models.CharField('Item name', max_length=100)
     desc = models.CharField('Description of item', max_length=400, blank = True)
-    supply = models.IntegerField(default = 0)
-    to_make = models.IntegerField(default = 0)
+    # supply = models.IntegerField(default = 0)
+    # to_make = models.IntegerField(default = 0)
     req_item = models.ManyToManyField(Item, through='ItemRequirement')
 
     def __unicode__(self):
@@ -78,6 +78,7 @@ class StockOrder(models.Model):
         return self.supplier.name
 
 class ProductOrder(models.Model):
+    customer = models.ForeignKey(Customer)
     product = models.ForeignKey(Product)
     date = models.DateTimeField('Date Ordered')
     completion_date = models.DateField('Completion Date')
