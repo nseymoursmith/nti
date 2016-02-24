@@ -129,3 +129,8 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 ) 
 
+EMAIL_HOST = 'smtp.noztek.com'
+EMAIL_HOST_USER = 'info@noztek.com'
+#EMAIL_HOST_PASSWORD = ''
+EMAIL_PORT = 587
+#EMAIL_USE_TLS = True

@@ -1,10 +1,15 @@
 from django.db import models
 from datetime import date as dm
+from django.core.mail import send_mail
+
 
 def checkStock(minimum = 10):
     for item in Item.objects.all():
         if item.supply < minimum:
-            print "Warning: %s stock at %d, buy summore!" % (item.name, item.supply)
+            warning = "Warning: %s stock at %d, buy summore!" % (item.name, item.supply)
+#            send_mail('Stock warning', warning, 'info@noztek.com',
+#                      ['info@noztek.com'], fail_silently=False)
+            print warning
 
 # Basic objects, without relationships
 class Location(models.Model):
@@ -61,12 +66,16 @@ class Product(models.Model):
 #      updated! Likewise for ProductOrder
 class StockOrder(models.Model):
     supplier = models.ForeignKey(Supplier)
-    date = models.DateTimeField('Date Ordered', default = dm.today)
-    delivery_date = models.DateField('Delivery Date', default = dm.today)
+    date = models.DateTimeField('Date Ordered')
+    delivery_date = models.DateField('Delivery Date')
 #    date.auto_now_add
     items_ordered = models.ManyToManyField(Item, through='ItemOrder')
     delivered = models.BooleanField('Delivered?', default = False)
     def save(self, *args, **kwargs):
+        if not self.pk and self.delivered:
+            for entry in self.items_ordered.all():
+                entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
+                entry.save()
         if self.pk:
             orig = StockOrder.objects.get(pk = self.pk)
             if orig.delivered != self.delivered:
@@ -92,6 +101,10 @@ class ProductOrder(models.Model):
 #    items_used = models.ManyToManyField(Item, through='ItemOrder')
     completed = models.BooleanField('Completed?', default = False)
     def save(self, *args, **kwargs):
+        if not self.pk and self.completed:
+            for entry in self.product.req_item.all():
+                entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
+                entry.save()
         if self.pk:
             orig = ProductOrder.objects.get(pk = self.pk)
             if orig.completed != self.completed:
