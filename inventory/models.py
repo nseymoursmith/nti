@@ -33,7 +33,7 @@ class Customer(models.Model):
     name = models.CharField(max_length = 50)
     email = models.EmailField(blank = True)
     phone = models.CharField(max_length = 20, blank = True)
-#    address = models.CharField(max_length = 500, blank = True)
+    address = models.CharField(max_length = 500, blank = True)
 
     def __unicode__(self):
         return self.name
