@@ -22,8 +22,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'bm+-%_xdgm&(_$#t61z^o=mer6metiik=z49imcdpg0g=9wy$$'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -102,13 +100,15 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
 try:
     from .local_settings import *
 except ImportError:
     # # Heroku setup
     
     # # If there isn't a local_settings then get settings from the enviroment
- 
+    DEBUG = False
     # # Get database settings from DATABASE_URL enviroment, this may be overidden in the local settings
     import dj_database_url
     DATABASES = {'default': dj_database_url.config(default='postgres://localhost')}
@@ -129,8 +129,8 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 ) 
 
-EMAIL_HOST = 'smtp.noztek.com'
-EMAIL_HOST_USER = 'info@noztek.com'
-#EMAIL_HOST_PASSWORD = ''
-EMAIL_PORT = 587
-#EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'noztek.inventory@gmail.com'
+EMAIL_HOST_PASSWORD = 'suchinventorymanagement'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
