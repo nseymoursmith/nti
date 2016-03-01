@@ -108,7 +108,7 @@ except ImportError:
     # # Heroku setup
     
     # # If there isn't a local_settings then get settings from the enviroment
-    DEBUG = False
+#    DEBUG = False
     # # Get database settings from DATABASE_URL enviroment, this may be overidden in the local settings
     import dj_database_url
     DATABASES = {'default': dj_database_url.config(default='postgres://localhost')}
