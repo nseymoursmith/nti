@@ -134,4 +134,4 @@ EMAIL_HOST_USER = 'noztek.inventory@gmail.com'
 EMAIL_HOST_PASSWORD = 'suchinventorymanagement'
 EMAIL_PORT = 465
 #EMAIL_USE_SSL = True
-#EMAIL_USE_TLS = True
+EMAIL_USE_TLS = True
