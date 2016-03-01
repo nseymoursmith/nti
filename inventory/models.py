@@ -66,6 +66,9 @@ class Product(models.Model):
     # to_make = models.IntegerField(default = 0)
     req_item = models.ManyToManyField(Item, through='ItemRequirement')
 
+    class Meta:
+        verbose_name_plural = 'Product specifications'
+
     def __unicode__(self):
         return self.name
 
