@@ -117,11 +117,11 @@ class StockCorrection(models.Model):
 class ProductOrder(models.Model):
     customer = models.ForeignKey(Customer)
     product = models.ForeignKey(Product)
+    number_ordered = models.IntegerField(default = 1)
     date = models.DateTimeField('Date Ordered')
     completion_date = models.DateField('Completion Date')
 #    items_used = models.ManyToManyField(Item, through='ItemOrder')
     completed = models.BooleanField('Completed?', default = False)
-    number_ordered = models.IntegerField(default = 1)
 
     def adjustStock(self):
         restock = []
