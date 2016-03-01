@@ -89,7 +89,7 @@ class StockOrderAdmin(admin.ModelAdmin):
     save_as = True
 
 class ProductOrderAdmin(admin.ModelAdmin):
-    list_display = ('product', 'customer', 'date', 'completion_date', 'completed')
+    list_display = ('product', 'number_ordered', 'customer', 'date', 'completion_date', 'completed')
     save_as = True
 
 class StockCorrectionAdmin(admin.ModelAdmin):

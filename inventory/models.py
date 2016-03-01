@@ -121,6 +121,7 @@ class ProductOrder(models.Model):
     completion_date = models.DateField('Completion Date')
 #    items_used = models.ManyToManyField(Item, through='ItemOrder')
     completed = models.BooleanField('Completed?', default = False)
+    number_ordered = models.IntegerField(default = 1)
 
     def adjustStock(self):
         restock = []
