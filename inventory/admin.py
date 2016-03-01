@@ -82,21 +82,15 @@ class SupplierAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ItemRequirementInline]
     save_as = True
-    class Meta:
-        verbose_name_plural = 'Product specifications'
 
 class StockOrderAdmin(admin.ModelAdmin):
     inlines = [ItemOrderInline]
     list_display = ('supplier', 'date', 'delivery_date', 'delivered')
     save_as = True
-    class Meta:
-        verbose_name_plural = 'STOCK CONTROL: Stock orders'
 
 class ProductOrderAdmin(admin.ModelAdmin):
     list_display = ('product', 'customer', 'date', 'completion_date', 'completed')
     save_as = True
-    class Meta:
-        verbose_name_plural = 'PRODUCT SALES: Product orders'
 
 class StockCorrectionAdmin(admin.ModelAdmin):
     inlines = [StockChangeInline]

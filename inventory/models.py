@@ -208,7 +208,7 @@ class StockChange(models.Model):
 class ItemRequirement(models.Model):
     product = models.ForeignKey(Product)
     item = models.ForeignKey(Item)
-    number_required = models.IntegerField(default = 0)
+    number_required = models.IntegerField(default = 1)
    
     def number_stocked(self):
         if self.item == None: return "undefined"
