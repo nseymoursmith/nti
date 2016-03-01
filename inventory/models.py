@@ -2,17 +2,19 @@ from django.db import models
 from datetime import date as dm
 from django.core.mail import send_mail
 
-USE_EMAIL = False
+USE_EMAIL = True
+
+#TODO add a on-delete function to stockorder and product order that puts items back in stock
 
 def checkStock(minimum = 5):
     for item in Item.objects.all():
-        if item.supply < minimum:
+        if item.supply < item.minimum:
             warning = "Warning: %s stock at %d, buy summore!" % (item.name, item.supply)
             if USE_EMAIL:
                 send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
-                          ['info@noztek.com'], fail_silently=False)
+                          ['info@noztek.com'], fail_silently=True)
                 send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
-                          ['nseymoursmith@gmail.com'], fail_silently=False)
+                          ['nseymoursmith@gmail.com'], fail_silently=True)
             print warning
 
 # Basic objects, without relationships
@@ -52,6 +54,7 @@ class Item(models.Model):
     supply = models.IntegerField(default = 0)
     suppliers = models.ManyToManyField(Supplier, through='ItemSupplier')
     locations = models.ManyToManyField(Location, through='ItemLocation')
+    minimum = models.IntegerField('Minimum stock warning', default = 5)
 
     def __unicode__(self):
         return self.name
