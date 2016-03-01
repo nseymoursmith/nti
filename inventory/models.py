@@ -2,15 +2,17 @@ from django.db import models
 from datetime import date as dm
 from django.core.mail import send_mail
 
+USE_EMAIL = False
 
 def checkStock(minimum = 5):
     for item in Item.objects.all():
         if item.supply < minimum:
             warning = "Warning: %s stock at %d, buy summore!" % (item.name, item.supply)
-            send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
-                      ['info@noztek.com'], fail_silently=False)
-            send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
-                      ['nseymoursmith@gmail.com'], fail_silently=False)
+            if USE_EMAIL:
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                          ['info@noztek.com'], fail_silently=False)
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                          ['nseymoursmith@gmail.com'], fail_silently=False)
             print warning
 
 # Basic objects, without relationships
