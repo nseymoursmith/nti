@@ -6,17 +6,6 @@ USE_EMAIL = True
 
 #TODO add a on-delete function to stockorder and product order that puts items back in stock
 
-def checkStock(minimum = 5):
-    for item in Item.objects.all():
-        if item.supply < item.minimum:
-            warning = "Warning: %s stock at %d, buy summore!" % (item.name, item.supply)
-            if USE_EMAIL:
-                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
-                          ['info@noztek.com'], fail_silently=True)
-                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
-                          ['nseymoursmith@gmail.com'], fail_silently=True)
-            print warning
-
 # Basic objects, without relationships
 class Location(models.Model):
     location = models.CharField(max_length=100)
@@ -99,7 +88,6 @@ class StockOrder(models.Model):
                 entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
                 entry.save() 
         super(StockOrder, self).save(*args, **kwargs)
-        checkStock()
 
     def __unicode__(self):
         return self.supplier.name
@@ -132,11 +120,15 @@ class ProductOrder(models.Model):
     completion_date = models.DateField('Completion Date')
 #    items_used = models.ManyToManyField(Item, through='ItemOrder')
     completed = models.BooleanField('Completed?', default = False)
-    def save(self, *args, **kwargs):
+
+    def adjustStock(self):
+        restock = []
         if not self.pk and self.completed:
             for entry in self.product.req_item.all():
                 entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
                 entry.save()
+                if entry.supply < entry.minimum:
+                    restock.append((entry.name, entry.supply))
         if self.pk:
             orig = ProductOrder.objects.get(pk = self.pk)
             if orig.completed != self.completed:
@@ -144,16 +136,32 @@ class ProductOrder(models.Model):
                     for entry in self.product.req_item.all():
                         entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
                         entry.save()
+                        if entry.supply < entry.minimum:
+                            restock.append((entry.name, entry.supply))
                 else:
                     for entry in self.product.req_item.all():
                         entry.supply += ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
                         entry.save()
-           
+                        if entry.supply < entry.minimum:
+                            restock.append((entry.name, entry.supply))
+        if len(restock) > 0:
+            warning = ""
+            for name, supply in restock:
+                warning += "Warning: %s stock at %d, buy summore!\n" % (name, supply)
+            print warning
+            if USE_EMAIL:
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                        ['info@noztek.com'], fail_silently=True)
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                        ['nseymoursmith@gmail.com'], fail_silently=True)
+
+    def save(self, *args, **kwargs):
+        self.adjustStock()
         super(ProductOrder, self).save(*args, **kwargs)
-        checkStock()
 
     def __unicode__(self):
         return self.product.name
+
 
 # class CustomerOrder(models.Model):
 #     customer = models.ForeignKey(Customer)
