@@ -116,9 +116,10 @@ admin.site.register(Supplier, SupplierAdmin)
 
 admin.site.register(StockOrder, StockOrderAdmin)
 
-#admin.site.register(StockCorrection, StockCorrectionAdmin)
+admin.site.register(StockCorrection, StockCorrectionAdmin)
 
 admin.site.register(ProductOrder, ProductOrderAdmin)
+
 #admin.site.register(ItemRequirement, ItemRequirementAdmin)
 
 #admin.site.register(Event, EventAdmin)

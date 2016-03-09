@@ -1,6 +1,9 @@
 from django.db import models
 from datetime import date as dm
 from django.core.mail import send_mail
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+import time
 
 USE_EMAIL = True
 
@@ -84,6 +87,7 @@ class StockOrder(models.Model):
                         entry.supply -= ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
                         entry.save()
         if not self.pk and self.delivered:
+            #TODO CHECK IF THIS REALLY WORKS --> NO SAME BUG AS BELOW
             super(StockOrder, self).save(*args, **kwargs)
             for entry in self.items_ordered.all():
                 entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_ordered
@@ -96,23 +100,50 @@ class StockOrder(models.Model):
 class StockCorrection(models.Model):
     warning = models.CharField(max_length = 256, default = "Warning: this can only be applied once. Changing values after creation will have no effect - don't do it!")
     date = models.DateTimeField('Date Ordered')
-    items_changed = models.ManyToManyField(Item, through='StockChange')
+    items_adjusted = models.ManyToManyField(Item, through='StockChange')
     reason = models.CharField(max_length = 256)
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            super(StockCorrection, self).save(*args, **kwargs)
-            for entry in self.items_changed.all():
-                #BUG: Does not get any entries
-                print "HERE"
-                print entry.supply
-                entry.supply += StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason).filter(item__name=entry.name)[0].number_changed
-                print entry.supply
-                entry.save() 
-        super(StockCorrection, self).save(*args, **kwargs)
-        checkStock()
-
+    adjusted = models.BooleanField(default = False)
+    
     def __unicode__(self):
-        return str(self.date)
+        return self.reason
+
+@receiver(post_save, sender=StockCorrection, dispatch_uid="update_stock")
+def update_stock(sender, instance, **kwargs):
+    print "got to the post save"
+    if not instance.adjusted:
+        print "adjusting stock"
+        print StockChange.objects.filter(correction__date = instance.date).filter(correction__reason = instance.reason)
+        print instance.items_adjusted.all()
+        for entry in instance.items_adjusted.all():
+            print "got stuff!"
+            entry.supply += ItemOrder.objects.filter(stock_order__date=self.date).filter(item__name=entry.name)[0].number_changed
+            entry.save()
+        instance.adjusted = True
+        instance.save()
+
+    # def save(self, *args, **kwargs):
+    #     if self.pk:
+    #         print "I exist!"
+    #         print StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason)
+    #         print self.items_adjusted
+    #     if not self.pk:
+    #         print "I don't exist yet"
+    #         super(StockCorrection, self).save(*args, **kwargs)
+    #         if self.pk:
+    #             print "but I do now"
+    #             print self.items_adjusted
+    #         else:
+    #             print "I still don't exist"
+    #         #BUG: Does not get any entries:
+
+    #         if StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason):
+    #             print "got stuff"
+    #         else:
+    #             print "not got stuff"
+    #             for entry in StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason):
+    #                 entry.supply += StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason).filter(item__name=entry.name)[0].number_changed
+    #                 entry.save() 
+
 
 class ProductOrder(models.Model):
     customer = models.ForeignKey(Customer)
@@ -126,6 +157,7 @@ class ProductOrder(models.Model):
     def adjustStock(self):
         restock = []
         if not self.pk and self.completed:
+            #TODO CHECK IF THIS REALLY WORKS --> YES
             for entry in self.product.req_item.all():
                 entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
                 entry.save()
@@ -149,7 +181,7 @@ class ProductOrder(models.Model):
         if len(restock) > 0:
             warning = ""
             for name, supply in restock:
-                warning += "Warning: %s stock at %d, buy summore!\n" % (name, supply)
+                warning += "Warning: %s stock at %d!\n" % (name, supply)
             print warning
             if USE_EMAIL:
                 send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
