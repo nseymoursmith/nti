@@ -3,7 +3,7 @@ from datetime import date as dm
 from django.core.mail import send_mail
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-import time
+import datetime
 
 USE_EMAIL = True
 
@@ -157,7 +157,6 @@ class ProductOrder(models.Model):
     def adjustStock(self):
         restock = []
         if not self.pk and self.completed:
-            #TODO CHECK IF THIS REALLY WORKS --> YES
             for entry in self.product.req_item.all():
                 entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
                 entry.save()
@@ -197,32 +196,108 @@ class ProductOrder(models.Model):
         return self.product.name
 
 
-# class CustomerOrder(models.Model):
-#     customer = models.ForeignKey(Customer)
-#     product = models.ManyToManyField(Product, through='ProductRequirement')
-#     date = models.DateTimeField('Date Ordered')
-#     completion_date = models.DateField('Completion Date')
-# #    items_used = models.ManyToManyField(Item, through='ItemOrder')
-#     completed = models.BooleanField('Completed?', default = False)
-#     def save(self, *args, **kwargs):
-#         if self.pk:
-#             orig = ProductOrder.objects.get(pk = self.pk)
-#             if orig.completed != self.completed:
-#                 if self.completed:
-#                     for entry in self.product.req_item.all():
-#                         entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
-#                         entry.save()
-#                 else:
-#                     for entry in self.product.req_item.all():
-#                         entry.supply += ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required
-#                         entry.save()
-           
-#         super(ProductOrder, self).save(*args, **kwargs)
+class CustomerOrder(models.Model):
+    customer = models.ForeignKey(Customer)
+    product = models.ManyToManyField(Product, through='ProductRequirement')
+    additional_items = models.ManyToManyField(Item, through='AdditionalItem')
+    date = models.DateTimeField('Date Ordered')
+    completion_date = models.DateField('Completion Date', default = datetime.date.today)
+    completed = models.BooleanField('Completed?', default = False)
 
-#     def __unicode__(self):
-#         return self.product.name
+    def __unicode__(self):
+        return self.customer.name
 
 # Relationship objects
+class AdditionalItem(models.Model):
+    customer_order = models.ForeignKey(CustomerOrder)
+    item = models.ForeignKey(Item)
+    number_ordered = models.IntegerField(default = 0)
+    added = models.BooleanField('Added to order?', default = False)
+
+    def adjustStock(self):
+        restock = []
+        if not self.pk and self.added:
+            self.item.supply -= self.number_ordered
+            self.item.save()
+        #check working 
+        if self.pk:
+            orig = AdditionalItem.objects.get(pk = self.pk)
+            if orig.added != self.added:
+                if self.added:
+                    self.item.supply -= self.number_ordered
+                    self.item.save()
+                    if self.item.supply < self.item.minimum:
+                        restock.append((self.item.name, self.item.supply))
+                else:
+                    self.item.supply += self.number_ordered
+                    self.item.save()
+                    if self.item.supply < self.item.minimum:
+                        restock.append((self.item.name, self.item.supply))
+        if len(restock) > 0:
+            warning = ""
+            for name, supply in restock:
+                warning += "Warning: %s stock at %d!\n" % (name, supply)
+            print warning
+            if USE_EMAIL:
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                        ['info@noztek.com'], fail_silently=True)
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                        ['nseymoursmith@gmail.com'], fail_silently=True)
+    def save(self, *args, **kwargs):
+        self.adjustStock()
+        super(AdditionalItem, self).save(*args, **kwargs)
+
+    def __unicode__(self):
+        return self.item.name
+
+class ProductRequirement(models.Model):
+    customer_order = models.ForeignKey(CustomerOrder)
+    product = models.ForeignKey(Product)
+    number_ordered = models.IntegerField(default = 0)
+    completion_date = models.DateField('Completion Date', default=datetime.date.today)
+    completed = models.BooleanField('Completed?', default = False)
+
+    def adjustStock(self):
+        restock = []
+        if not self.pk and self.completed:
+            for entry in self.product.req_item.all():
+                entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
+                entry.save()
+                if entry.supply < entry.minimum:
+                    restock.append((entry.name, entry.supply))
+        if self.pk:
+            orig = ProductRequirement.objects.get(pk = self.pk)
+            if orig.completed != self.completed:
+                if self.completed:
+                    for entry in self.product.req_item.all():
+                        entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
+                        entry.save()
+                        if entry.supply < entry.minimum:
+                            restock.append((entry.name, entry.supply))
+                else:
+                    for entry in self.product.req_item.all():
+                        entry.supply += ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
+                        entry.save()
+                        if entry.supply < entry.minimum:
+                            restock.append((entry.name, entry.supply))
+        if len(restock) > 0:
+            warning = ""
+            for name, supply in restock:
+                warning += "Warning: %s stock at %d!\n" % (name, supply)
+            print warning
+            if USE_EMAIL:
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                        ['info@noztek.com'], fail_silently=True)
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                        ['nseymoursmith@gmail.com'], fail_silently=True)
+
+    def save(self, *args, **kwargs):
+        self.adjustStock()
+        super(ProductRequirement, self).save(*args, **kwargs)
+
+    def __unicode__(self):
+        return self.product.name
+
 class ItemOrder(models.Model):
     stock_order = models.ForeignKey(StockOrder)
     item = models.ForeignKey(Item)

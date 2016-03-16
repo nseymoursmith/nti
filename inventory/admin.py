@@ -28,8 +28,19 @@ from .models import StockCorrection
 
 from .models import StockChange
 
-#from .models import Event
-#from .models import EventStock
+from .models import CustomerOrder
+
+from .models import ProductRequirement
+
+from .models import AdditionalItem
+
+class ProductRequirementInline(admin.TabularInline):
+    model = ProductRequirement
+    extra = 1
+
+class AdditionalItemInline(admin.TabularInline):
+    model = AdditionalItem
+    extra = 1
 
 class ItemLocationInline(admin.TabularInline):
     model = ItemLocation
@@ -69,6 +80,13 @@ class ItemRequirementInline(admin.TabularInline):
 #         return instance.number_stocked()
 #     stock_report.short_description = "In Stock: "
 
+class CustomerOrderAdmin(admin.ModelAdmin):
+    inlines = [ProductRequirementInline, AdditionalItemInline]
+    list_display = ('customer', 'date', 'completion_date', 'completed')
+
+class ProductRequirementAdmin(admin.ModelAdmin):
+    list_display = ('customer_order', 'product', 'number_ordered', 'completion_date', 'completed')
+
 class ItemAdmin(admin.ModelAdmin):
     inlines = [ItemLocationInline, ItemSupplierInline]
     list_display = ('name','supply')
@@ -104,6 +122,10 @@ class StockCorrectionAdmin(admin.ModelAdmin):
 
 admin.site.register(Product, ProductAdmin)
 
+admin.site.register(CustomerOrder, CustomerOrderAdmin)
+
+admin.site.register(ProductRequirement, ProductRequirementAdmin)
+
 #admin.site.register(Location)
 
 #admin.site.register(Supplier)
@@ -114,9 +136,9 @@ admin.site.register(Customer, CustomerAdmin)
 
 admin.site.register(Supplier, SupplierAdmin)
 
-admin.site.register(StockOrder, StockOrderAdmin)
+#admin.site.register(StockOrder, StockOrderAdmin)
 
-admin.site.register(StockCorrection, StockCorrectionAdmin)
+#admin.site.register(StockCorrection, StockCorrectionAdmin)
 
 admin.site.register(ProductOrder, ProductOrderAdmin)
 
