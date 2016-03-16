@@ -121,30 +121,6 @@ def update_stock(sender, instance, **kwargs):
         instance.adjusted = True
         instance.save()
 
-    # def save(self, *args, **kwargs):
-    #     if self.pk:
-    #         print "I exist!"
-    #         print StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason)
-    #         print self.items_adjusted
-    #     if not self.pk:
-    #         print "I don't exist yet"
-    #         super(StockCorrection, self).save(*args, **kwargs)
-    #         if self.pk:
-    #             print "but I do now"
-    #             print self.items_adjusted
-    #         else:
-    #             print "I still don't exist"
-    #         #BUG: Does not get any entries:
-
-    #         if StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason):
-    #             print "got stuff"
-    #         else:
-    #             print "not got stuff"
-    #             for entry in StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason):
-    #                 entry.supply += StockChange.objects.filter(correction__date=self.date).filter(correction__reason=self.reason).filter(item__name=entry.name)[0].number_changed
-    #                 entry.save() 
-
-
 class ProductOrder(models.Model):
     customer = models.ForeignKey(Customer)
     product = models.ForeignKey(Product)
@@ -207,11 +183,60 @@ class CustomerOrder(models.Model):
     def __unicode__(self):
         return self.customer.name
 
+class Assembler(models.Model):
+    name = models.CharField(max_length = 50)
+    website = models.URLField(max_length = 100, blank = True)
+    email = models.EmailField(blank = True)
+    phone = models.CharField(max_length = 20, blank = True)
+
+    def __unicode__(self):
+        return self.name
+
+class AssemblyOrder(models.Model):
+    product = models.ManyToManyField(Product, through='ProductAssembly')
+    assembler = models.ForeignKey(Assembler)
+    date = models.DateTimeField('Date sent')
+    due_date = models.DateField('Due date', default = datetime.date.today)
+    completed = models.BooleanField('Completed?', default = False)
+
 # Relationship objects
+class ProductAssembly(models.Model):
+    assembly_order = models.ForeignKey(AssemblyOrder)
+    product = models.ForeignKey(Product)
+    number_ordered = models.IntegerField(default = 1)
+    completion_date = models.DateField('Completion Date', default=datetime.date.today)
+    completed = models.BooleanField('Completed?', default = False)
+
+    def adjustStock(self):
+        restock = []
+        if not self.pk:
+            for entry in self.product.req_item.all():
+                entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
+                entry.save()
+                if entry.supply < entry.minimum:
+                    restock.append((entry.name, entry.supply))
+        if len(restock) > 0:
+            warning = ""
+            for name, supply in restock:
+                warning += "Warning: %s stock at %d!\n" % (name, supply)
+            print warning
+            if USE_EMAIL:
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                        ['info@noztek.com'], fail_silently=True)
+                send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+                        ['nseymoursmith@gmail.com'], fail_silently=True)
+
+    def save(self, *args, **kwargs):
+        self.adjustStock()
+        super(ProductAssembly, self).save(*args, **kwargs)
+
+    def __unicode__(self):
+        return self.product.name
+
 class AdditionalItem(models.Model):
     customer_order = models.ForeignKey(CustomerOrder)
     item = models.ForeignKey(Item)
-    number_ordered = models.IntegerField(default = 0)
+    number_ordered = models.IntegerField(default = 1)
     added = models.BooleanField('Added to order?', default = False)
 
     def adjustStock(self):
@@ -253,7 +278,7 @@ class AdditionalItem(models.Model):
 class ProductRequirement(models.Model):
     customer_order = models.ForeignKey(CustomerOrder)
     product = models.ForeignKey(Product)
-    number_ordered = models.IntegerField(default = 0)
+    number_ordered = models.IntegerField(default = 1)
     completion_date = models.DateField('Completion Date', default=datetime.date.today)
     completed = models.BooleanField('Completed?', default = False)
 

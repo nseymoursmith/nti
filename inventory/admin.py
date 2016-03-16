@@ -34,6 +34,16 @@ from .models import ProductRequirement
 
 from .models import AdditionalItem
 
+from .models import Assembler
+
+from .models import AssemblyOrder
+
+from .models import ProductAssembly
+
+class ProductAssemblyInline(admin.TabularInline):
+    model = ProductAssembly
+    extra = 1
+
 class ProductRequirementInline(admin.TabularInline):
     model = ProductRequirement
     extra = 1
@@ -74,11 +84,12 @@ class ItemRequirementInline(admin.TabularInline):
     stock_report.short_description = "In Stock: "
     extra = 0
 
-# class ItemRequirementAdmin(admin.ModelAdmin):
-#     readonly_fields = ('stock_report',)
-#     def stock_report(self, instance):
-#         return instance.number_stocked()
-#     stock_report.short_description = "In Stock: "
+class AssemblerAdmin(admin.ModelAdmin):
+    list_display = ("name", "website", "email", "phone")
+
+class AssemblyOrderAdmin(admin.ModelAdmin):
+    inlines = [ProductAssemblyInline]
+    list_display = ('assembler', 'date', 'due_date', 'completed')
 
 class CustomerOrderAdmin(admin.ModelAdmin):
     inlines = [ProductRequirementInline, AdditionalItemInline]
@@ -121,6 +132,10 @@ class StockCorrectionAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Product, ProductAdmin)
+
+admin.site.register(Assembler, AssemblerAdmin)
+
+admin.site.register(AssemblyOrder, AssemblyOrderAdmin)
 
 admin.site.register(CustomerOrder, CustomerOrderAdmin)
 
