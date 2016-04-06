@@ -171,7 +171,6 @@ class ProductRequirement(models.Model):
     product = models.ForeignKey(Product)
     number_ordered = models.IntegerField(default = 1)
     completion_date = models.DateField('Completion Date', default=datetime.date.today)
-    self_built = models.BooleanField(default = False)
     completed = models.BooleanField('Completed?', default = False)
 
     def number_stocked(self):
@@ -181,33 +180,18 @@ class ProductRequirement(models.Model):
             if assembly.completed:
                 stock += assembly.number_ordered
         for order in ProductRequirement.objects.filter(product__name=self.product.name):
-            if order.completed and not order.self_built:
+            if order.completed:
                 stock -= order.number_ordered
         return stock
 
     def adjustStock(self):
         restock = []
-        if not self.pk and self.self_built:
+        if not self.pk:
             for entry in self.product.req_item.all():
                 entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
                 entry.save()
                 if entry.supply < entry.minimum:
                     restock.append((entry.name, entry.supply))
-        if self.pk:
-            orig = ProductRequirement.objects.get(pk = self.pk)
-            if orig.self_built != self.self_built:
-                if self.self_built:
-                    for entry in self.product.req_item.all():
-                        entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
-                        entry.save()
-                        if entry.supply < entry.minimum:
-                            restock.append((entry.name, entry.supply))
-                else:
-                    for entry in self.product.req_item.all():
-                        entry.supply += ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
-                        entry.save()
-                        if entry.supply < entry.minimum:
-                            restock.append((entry.name, entry.supply))
         if len(restock) > 0:
             warning = ""
             for name, supply in restock:
@@ -221,7 +205,45 @@ class ProductRequirement(models.Model):
 
     def save(self, *args, **kwargs):
         self.adjustStock()
-        super(ProductRequirement, self).save(*args, **kwargs)
+        super(ProductAssembly, self).save(*args, **kwargs)
+
+    # def adjustStock(self):
+    #     restock = []
+    #     if not self.pk and self.completed:
+    #         for entry in self.product.req_item.all():
+    #             entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
+    #             entry.save()
+    #             if entry.supply < entry.minimum:
+    #                 restock.append((entry.name, entry.supply))
+    #     if self.pk:
+    #         orig = ProductRequirement.objects.get(pk = self.pk)
+    #         if orig.completed != self.completed:
+    #             if self.completed:
+    #                 for entry in self.product.req_item.all():
+    #                     entry.supply -= ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
+    #                     entry.save()
+    #                     if entry.supply < entry.minimum:
+    #                         restock.append((entry.name, entry.supply))
+    #             else:
+    #                 for entry in self.product.req_item.all():
+    #                     entry.supply += ItemRequirement.objects.filter(product__name=self.product.name).filter(item__name=entry.name)[0].number_required*self.number_ordered
+    #                     entry.save()
+    #                     if entry.supply < entry.minimum:
+    #                         restock.append((entry.name, entry.supply))
+    #     if len(restock) > 0:
+    #         warning = ""
+    #         for name, supply in restock:
+    #             warning += "Warning: %s stock at %d!\n" % (name, supply)
+    #         print warning
+    #         if USE_EMAIL:
+    #             send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+    #                     ['info@noztek.com'], fail_silently=True)
+    #             send_mail('Stock warning', warning, 'noztek.inventory@gmail.com',
+    #                     ['nseymoursmith@gmail.com'], fail_silently=True)
+
+    # def save(self, *args, **kwargs):
+    #     self.adjustStock()
+    #     super(ProductRequirement, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return self.product.name
