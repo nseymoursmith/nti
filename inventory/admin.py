@@ -46,7 +46,7 @@ class ProductAssemblyInline(admin.TabularInline):
     def stock_report(self, instance):
         return instance.number_stocked()
     stock_report.short_description = "In Stock: "
-    extra = 1
+    extra = 0
 
 class ProductRequirementInline(admin.TabularInline):
     model = ProductRequirement
@@ -54,11 +54,11 @@ class ProductRequirementInline(admin.TabularInline):
     def stock_report(self, instance):
         return instance.number_stocked()
     stock_report.short_description = "In Stock: "
-    extra = 1
+    extra = 0
 
 class AdditionalItemInline(admin.TabularInline):
     model = AdditionalItem
-    extra = 1
+    extra = 0
 
 class ItemLocationInline(admin.TabularInline):
     model = ItemLocation
@@ -97,11 +97,20 @@ class AssemblerAdmin(admin.ModelAdmin):
 
 class AssemblyOrderAdmin(admin.ModelAdmin):
     inlines = [ProductAssemblyInline]
-    list_display = ('assembler', 'date', 'due_date', 'completed')
+    readonly_fields = ('completed',)
+    def completed(self, instance):
+        return instance.complete()
+    list_display = ('assembler', 'date', 'due_date', 'complete')
 
 class CustomerOrderAdmin(admin.ModelAdmin):
     inlines = [ProductRequirementInline, AdditionalItemInline]
-    list_display = ('customer', 'date', 'completion_date', 'completed')
+    readonly_fields = ('completed',)
+    def completed(self, instance):
+        return instance.complete()
+    def tracking_url(self, obj):
+        return '<a href="%s">%s</a>' % (obj.tracking, obj.tracking)
+    tracking_url.allow_tags = True
+    list_display = ('customer', 'date', 'completion_date', 'complete', 'tracking_url')
 
 class ProductRequirementAdmin(admin.ModelAdmin):
     list_display = ( 'product', 'customer_order', 'number_ordered', 'completion_date', 'completed')

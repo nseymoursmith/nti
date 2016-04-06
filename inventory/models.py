@@ -89,7 +89,16 @@ class CustomerOrder(models.Model):
     additional_items = models.ManyToManyField(Item, through='AdditionalItem')
     date = models.DateTimeField('Date Ordered')
     completion_date = models.DateField('Completion Date', default = datetime.date.today)
-    completed = models.BooleanField('Completed?', default = False)
+    tracking = models.URLField('Tracking URL:', max_length=300, blank = True)
+
+    def complete(self):
+        if self.pk == None: return "undefined"
+        completed = True
+        for prod in ProductRequirement.objects.filter(customer_order__pk = self.pk):
+            if not prod.completed:
+                completed = False
+        return completed
+    complete.boolean = True
 
     def __unicode__(self):
         return self.customer.name
@@ -99,7 +108,15 @@ class AssemblyOrder(models.Model):
     assembler = models.ForeignKey(Assembler)
     date = models.DateTimeField('Date sent')
     due_date = models.DateField('Due date', default = datetime.date.today)
-    completed = models.BooleanField('Completed?', default = False)
+
+    def complete(self):
+        if self.pk == None: return "undefined"
+        completed = True
+        for prod in ProductAssembly.objects.filter(assembly_order__pk = self.pk):
+            if not prod.completed:
+                completed = False
+        return completed
+    complete.boolean = True
 
     def __unicode__(self):
         return self.assembler.name
